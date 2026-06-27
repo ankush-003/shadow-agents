@@ -24,4 +24,10 @@ assert_contains "$fm" "name: tusk" "tusk name"
 assert_contains "$fm" "isolation: worktree" "tusk isolated in worktree"
 assert_contains "$fm" "model: sonnet" "tusk runs sonnet"
 assert_contains "$fm" "maxTurns:" "tusk has maxTurns cap"
+# --- /experiment command ---
+cm="$ROOT/commands/experiment.md"
+cfm="$(sed -n '1,8p' "$cm" 2>/dev/null)"
+assert_contains "$cfm" "description:" "experiment cmd description"
+assert_contains "$cfm" "argument-hint:" "experiment cmd argument-hint"
+assert_contains "$(cat "$cm")" "tusk" "experiment dispatches tusk"
 assert_done
