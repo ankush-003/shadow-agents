@@ -1,0 +1,8 @@
+# Reference clones — study only, not part of the plugin
+explore/
+
+# Runtime state
+.shadow/
+
+# OS / editor
+.DS_Store
