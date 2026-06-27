@@ -1,0 +1,12 @@
+{
+  "name": "shadow-legion",
+  "owner": { "name": "Ankush" },
+  "plugins": [
+    {
+      "name": "shadow-legion",
+      "description": "Autonomous research & experimentation army — Shadow Monarch orchestration for Claude Code.",
+      "version": "0.0.1",
+      "source": "."
+    }
+  ]
+}

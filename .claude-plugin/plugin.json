@@ -1,0 +1,9 @@
+{
+  "name": "shadow-legion",
+  "description": "Autonomous research & experimentation army for Claude Code. A Shadow Monarch orchestrator commands ranked specialist agents that research, experiment in isolated worktrees, and learn. ARISE.",
+  "version": "0.0.1",
+  "author": { "name": "Ankush" },
+  "license": "MIT",
+  "keywords": ["autonomous", "experiments", "orchestration", "research", "solo-leveling"],
+  "statusline": "./statusline/legion.sh"
+}
