@@ -11,4 +11,10 @@ assert_eq "./statusline/legion.sh" "$(jq -r '.statusline' "$ROOT/.claude-plugin/
 jq empty "$ROOT/.claude-plugin/marketplace.json"; assert_exit 0 $? "marketplace.json valid json"
 assert_eq "shadow-legion" "$(jq -r '.plugins[0].name' "$ROOT/.claude-plugin/marketplace.json")" "marketplace plugin name"
 assert_eq "." "$(jq -r '.plugins[0].source' "$ROOT/.claude-plugin/marketplace.json")" "marketplace source is repo root"
+# --- Monarch skill ---
+sk="$ROOT/skills/monarch/SKILL.md"
+assert_eq "1" "$([ -f "$sk" ] && echo 1 || echo 0)" "monarch SKILL.md exists"
+assert_contains "$(sed -n '1,6p' "$sk")" "name: monarch" "monarch frontmatter name"
+assert_contains "$(sed -n '1,6p' "$sk")" "description:" "monarch frontmatter description"
+assert_eq "1" "$([ -s "$ROOT/output-styles/monarch.md" ] && echo 1 || echo 0)" "output style non-empty"
 assert_done
