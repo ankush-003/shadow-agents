@@ -14,8 +14,9 @@ Extract: `Metric:`, `Verify:`, `Direction:` (default `higher_is_better`), `Guard
 - Pick a run id and OutDir: `.shadow/experiments/exp-$(date -u +%y%m%d-%H%M%S)` under the git root.
 
 ## 3. Safety screen
-Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/safety-screen.sh "<Verify>"` (and Guard if set).
-If either prints `refuse:`, stop and report the reason. Do not dispatch.
+Screen the Verify command (and Guard if set):
+`bash ${CLAUDE_PLUGIN_ROOT}/scripts/safety-screen.sh "<Verify>"`
+This script EXITS NON-ZERO and writes `refuse: <reason>` to stderr when the command is dangerous; it prints `ok` and exits 0 when safe. Check the EXIT CODE — if it is non-zero, STOP and report the refusal reason to the user. Do not dispatch. (Capture stderr too, e.g. run with `2>&1`, so you can show the reason.)
 
 ## 4. Dispatch Tusk
 Spawn the `tusk` subagent (it runs in its own worktree via its `isolation: worktree` setting).

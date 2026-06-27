@@ -22,7 +22,7 @@ Helpers (always use these; never reimplement):
 
 ## Protocol
 
-1. **Screen** the `Verify` (and `Guard`) command. If it prints `refuse:`, stop and report blocked.
+1. **Screen** the `Verify` (and `Guard`) command with `bash ${CLAUDE_PLUGIN_ROOT}/scripts/safety-screen.sh "<cmd>"`. It exits NON-ZERO (writing `refuse: <reason>` to stderr) when the command is dangerous. Check the EXIT CODE — if non-zero, stop and report blocked with the reason (run with `2>&1` to capture it).
 2. **Resume?** If `OutDir/handoff.json` exists, validate it and load `best`, `hypothesis`,
    `next_step`, `learnings`. Continue from there instead of a cold baseline.
 3. **Baseline (iteration 0, only if not resuming):** run `Verify` → metric. `results_init OutDir Direction`;
