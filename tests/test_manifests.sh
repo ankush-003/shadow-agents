@@ -17,4 +17,11 @@ assert_eq "1" "$([ -f "$sk" ] && echo 1 || echo 0)" "monarch SKILL.md exists"
 assert_contains "$(sed -n '1,6p' "$sk")" "name: monarch" "monarch frontmatter name"
 assert_contains "$(sed -n '1,6p' "$sk")" "description:" "monarch frontmatter description"
 assert_eq "1" "$([ -s "$ROOT/output-styles/monarch.md" ] && echo 1 || echo 0)" "output style non-empty"
+# --- Tusk agent ---
+tk="$ROOT/agents/tusk.md"
+fm="$(sed -n '1,12p' "$tk" 2>/dev/null)"
+assert_contains "$fm" "name: tusk" "tusk name"
+assert_contains "$fm" "isolation: worktree" "tusk isolated in worktree"
+assert_contains "$fm" "model: sonnet" "tusk runs sonnet"
+assert_contains "$fm" "maxTurns:" "tusk has maxTurns cap"
 assert_done
