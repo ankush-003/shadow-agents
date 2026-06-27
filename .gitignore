@@ -6,3 +6,6 @@ explore/
 
 # OS / editor
 .DS_Store
+
+# SDD scratch
+.superpowers/
