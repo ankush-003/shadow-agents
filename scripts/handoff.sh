@@ -10,7 +10,7 @@ cmd="${1:-}"; file="${2:-}"
 err="$(jq -r '
   def bad(m): m;
   if (.best|type)!="object" then bad("best missing")
-  elif (.best.commit|type)!="string" or (.best.metric==null) then bad("best.commit/metric missing")
+  elif (.best.commit|type)!="string" or (.best.commit|length)==0 or (.best.metric==null) then bad("best.commit/metric missing")
   elif (.hypothesis|type)!="string" or (.hypothesis|length)==0 then bad("hypothesis empty")
   elif (.next_step|type)!="string" or (.next_step|length)==0 then bad("next_step empty")
   elif (.learnings|type)!="array" then bad("learnings not array")

@@ -21,4 +21,13 @@ JSON
 
 "$H" validate /no/file 2>/dev/null; assert_exit 1 $? "missing file rejected"
 rm -f "$good" "$bad"
+
+emptycommit="$(mktemp)"; cat > "$emptycommit" <<'JSON'
+{ "best": {"commit":"","metric":"0.99"},
+  "hypothesis":"x", "next_step":"y",
+  "learnings":[{"claim":"a","implication":"b"}] }
+JSON
+"$H" validate "$emptycommit" 2>/dev/null; assert_exit 1 $? "empty commit rejected"
+rm -f "$emptycommit"
+
 assert_done
