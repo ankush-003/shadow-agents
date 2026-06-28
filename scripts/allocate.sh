@@ -15,7 +15,7 @@ case "$cmd" in
   add-arm)
     sf="$1"; id="$2"; desc="$3"; tmp="$sf.tmp"
     jq --arg id "$id" --arg d "$desc" \
-      '.arms += [{id:$id, desc:$d, attempts:0, mean_delta:0, best:null, last_improved:-1, dead:false}]' \
+      '.arms += [{id:$id, desc:$d, attempts:0, mean_delta:0, best:null, last_improved:-1, dead:false, no_improve_streak:0, dead_reason:null}]' \
       "$sf" > "$tmp" && mv "$tmp" "$sf"
     ;;
   next-arm)
@@ -42,13 +42,15 @@ case "$cmd" in
     dir="$(jq -r '.direction' "$sf")"
     jq --arg id "$id" --argjson m "$metric" --argjson d "$delta" --arg dir "$dir" '
       .cycle as $c
-      | .arms |= map(if .id==$id then
-          .attempts += 1
-          | .mean_delta = ((.mean_delta * (.attempts - 1) + $d) / .attempts)
-          | (if (.best==null) or ($dir=="lower_is_better" and $m < .best) or ($dir=="higher_is_better" and $m > .best)
-             then .best=$m | .last_improved=$c else . end)
-        else . end)
-      | .cycle += 1' "$sf" > "$tmp" && mv "$tmp" "$sf"
+      | .arms |= map(
+          if .id==$id then
+            .attempts += 1
+            | .mean_delta = ((.mean_delta * (.attempts - 1) + $d) / .attempts)
+            | (if (.best==null) or ($dir=="lower_is_better" and $m < .best) or ($dir=="higher_is_better" and $m > .best)
+               then .best=$m | .last_improved=$c | .no_improve_streak=0
+               else .no_improve_streak=(.no_improve_streak + 1) end)
+          else . end)
+      | .cycle += 1' "$sf" > "$sf.tmp" && mv "$sf.tmp" "$sf"
     ;;
   status)
     sf="$1"; target="${2:-}"
@@ -65,6 +67,21 @@ case "$cmd" in
         elif ([.arms[]|select(.dead==false and (.attempts==0 or ($c - .last_improved) < $pk))]|length)==0 then "PLATEAU"
         else "RUNNING" end
     ' "$sf"
+    ;;
+  dead-candidates)
+    sf="$1"; k="${2:-2}"
+    jq -r --argjson k "$k" '.arms[] | select(.dead==false and .no_improve_streak >= $k) | .id' "$sf"
+    ;;
+  mark-dead)
+    sf="$1"; id="$2"; reason="${3:-}"
+    [ -n "$reason" ] || { echo "mark-dead: reason required" >&2; exit 1; }
+    jq --arg id "$id" --arg r "$reason" \
+      '.arms |= map(if .id==$id then .dead=true | .dead_reason=$r else . end)' \
+      "$sf" > "$sf.tmp" && mv "$sf.tmp" "$sf"
+    ;;
+  dead-report)
+    sf="$1"
+    jq -r '.arms[] | select(.dead==true) | [.id, .desc, (.dead_reason // "")] | @tsv' "$sf"
     ;;
   *) shadow_die "unknown subcommand: $cmd" ;;
 esac

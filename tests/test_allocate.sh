@@ -49,4 +49,34 @@ sf3="$(mktemp)"
 assert_eq "h2" "$("$A" next-arm "$sf3")" "greedy higher_is_better picks highest mean_delta"
 rm -f "$sf3"
 
+# --- Phase 3: reasoned dead-arm pruning ---
+sfd="$(mktemp)"
+"$A" init "$sfd" lower_is_better 50 3
+"$A" add-arm "$sfd" d1 "dead-end approach"
+"$A" add-arm "$sfd" d2 "good approach"
+assert_eq "0" "$(jq -r '.arms[]|select(.id=="d1").no_improve_streak' "$sfd")" "streak starts 0"
+
+# d1 keeps not improving -> streak grows; d2 improves -> streak resets/stays 0
+"$A" update "$sfd" d1 3 0 discard     # no improvement (best stays null->set to 3 first time actually)
+"$A" update "$sfd" d1 3 0 discard     # still 3, no improvement
+sd1="$(jq -r '.arms[]|select(.id=="d1").no_improve_streak' "$sfd")"
+assert_eq "1" "$sd1" "d1 streak=1 after one non-improving (first update set baseline best)"
+
+# dead-candidates at threshold 1 includes d1, not d2
+cand="$("$A" dead-candidates "$sfd" 1)"
+assert_contains "$cand" "d1" "d1 is a dead candidate at k=1"
+case "$cand" in *d2*) echo "  FAIL d2 should not be candidate" >&2; ASSERT_FAILS=$((ASSERT_FAILS+1));; *) _pass "d2 not a candidate";; esac
+
+# mark-dead requires a reason and sets dead + reason
+"$A" mark-dead "$sfd" d1 "every variant worsened or matched baseline 3"
+assert_eq "true" "$(jq -r '.arms[]|select(.id=="d1").dead' "$sfd")" "d1 marked dead"
+assert_contains "$("$A" dead-report "$sfd")" "worsened" "dead-report shows reason"
+
+# mark-dead with empty reason errors
+"$A" mark-dead "$sfd" d2 "" 2>/dev/null; assert_exit 1 $? "mark-dead rejects empty reason"
+
+# next-arm now skips the dead d1, returns live d2 (untried)
+assert_eq "d2" "$("$A" next-arm "$sfd")" "next-arm skips dead arm"
+rm -f "$sfd"
+
 assert_done
