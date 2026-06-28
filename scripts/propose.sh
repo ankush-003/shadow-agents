@@ -27,7 +27,7 @@ ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   if [ -n "$best_id" ]; then
     desc="$(jq -r --arg id "$best_id" '.arms[]|select(.id==$id).desc' "$sf")"
     best="$(jq -r --arg id "$best_id" '.arms[]|select(.id==$id).best' "$sf")"
-    md="$(jq -r --arg id "$best_id" '.arms[]|select(.id==$id).mean_delta' "$sf")"
+    md="$(jq -r --arg id "$best_id" '.arms[]|select(.id==$id).mean_delta | (.*100|round)/100' "$sf")"
     printf '## Winning approach: %s\n\n' "$desc"
     printf -- '- best metric: **%s** (mean delta %s)\n\n' "$best" "$md"
   else
