@@ -37,4 +37,16 @@ sf2="$(mktemp)"; "$A" init "$sf2" higher_is_better 1 3; "$A" add-arm "$sf2" b1 x
 assert_eq "CEILING" "$("$A" status "$sf2")" "status ceiling"
 
 rm -f "$sf" "$sf2"
+
+# higher_is_better: greedy exploit must pick the HIGHEST mean_delta
+sf3="$(mktemp)"
+"$A" init "$sf3" higher_is_better 50 3
+"$A" add-arm "$sf3" h1 "approach one"
+"$A" add-arm "$sf3" h2 "approach two"
+"$A" next-arm "$sf3" >/dev/null     # consume untried h1
+"$A" update "$sf3" h1 5 1 keep      # h1 mean_delta +1
+"$A" update "$sf3" h2 9 5 keep      # h2 mean_delta +5 (better for higher_is_better)
+assert_eq "h2" "$("$A" next-arm "$sf3")" "greedy higher_is_better picks highest mean_delta"
+rm -f "$sf3"
+
 assert_done

@@ -33,7 +33,8 @@ case "$cmd" in
       idx=$(( RANDOM % live ))
       jq -r --argjson i "$idx" '[.arms[]|select(.dead==false)]|.[$i].id' "$sf"
     else
-      jq -r '[.arms[]|select(.dead==false)]|sort_by(.mean_delta)|.[0].id' "$sf"
+      dir="$(jq -r '.direction' "$sf")"
+      jq -r --arg dir "$dir" '[.arms[]|select(.dead==false)] | (if $dir=="higher_is_better" then sort_by(-.mean_delta) else sort_by(.mean_delta) end) | .[0].id' "$sf"
     fi
     ;;
   update)
