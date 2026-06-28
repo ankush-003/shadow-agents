@@ -17,12 +17,12 @@ rc=0
 check_tool git git       || rc=1
 check_tool jq jq         || rc=1
 check_tool claude claude || rc=1
-check_tool gh gh         || rc=1
 check_tool "memsearch (or uvx)" memsearch uvx || rc=1
+# gh is OPTIONAL — integration is proposal-only; gh is not needed.
+if command -v gh >/dev/null 2>&1; then echo "[opt] gh present"; else echo "[opt] gh absent — proposal-only integration"; fi
 if [ "$rc" -ne 0 ]; then
   echo "Preflight failed. Install missing tools:" >&2
   echo "  memsearch:  uv tool install 'memsearch[onnx]'  (or: pipx install 'memsearch[onnx]')" >&2
-  echo "  gh:         https://cli.github.com/" >&2
   exit 1
 fi
 echo "All systems ready. ARISE."
