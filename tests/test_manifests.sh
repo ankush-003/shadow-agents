@@ -31,6 +31,8 @@ cfm="$(sed -n '1,8p' "$cm" 2>/dev/null)"
 assert_contains "$cfm" "description:" "experiment cmd description"
 assert_contains "$cfm" "argument-hint:" "experiment cmd argument-hint"
 assert_contains "$(cat "$cm")" "tusk" "experiment dispatches tusk"
+assert_contains "$(cat "$cm")" "Id:" "experiment passes Id to tusk"
+assert_eq "0" "$(grep -c 'isolation: worktree' "$cm" || true)" "experiment no longer references native isolation"
 # --- /campaign command ---
 cc="$ROOT/commands/campaign.md"
 ccfm="$(sed -n '1,8p' "$cc" 2>/dev/null)"

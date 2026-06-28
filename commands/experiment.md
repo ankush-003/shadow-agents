@@ -11,7 +11,7 @@ Extract: `Metric:`, `Verify:`, `Direction:` (default `higher_is_better`), `Guard
 
 ## 2. Preconditions
 - Confirm a git repo: `git rev-parse --git-dir` — if not, tell the user to `git init` and stop.
-- Pick a run id and OutDir: `.shadow/experiments/exp-$(date -u +%y%m%d-%H%M%S)` under the git root.
+- Pick a run id and OutDir: OutDir is `.shadow/experiments/exp-$(date -u +%y%m%d-%H%M%S)` under the git root; Id is the basename of OutDir (e.g. `exp-<ts>`).
 
 ## 3. Safety screen
 Screen the Verify command (and Guard if set):
@@ -19,10 +19,11 @@ Screen the Verify command (and Guard if set):
 This script EXITS NON-ZERO and writes `refuse: <reason>` to stderr when the command is dangerous; it prints `ok` and exits 0 when safe. Check the EXIT CODE — if it is non-zero, STOP and report the refusal reason to the user. Do not dispatch. (Capture stderr too, e.g. run with `2>&1`, so you can show the reason.)
 
 ## 4. Dispatch Tusk
-Spawn the `tusk` subagent (it runs in its own worktree via its `isolation: worktree` setting).
+Spawn the `tusk` subagent (it creates its own worktree at `/tmp/shadow-exp-<Id>` from the Id you pass).
 Pass the assignment verbatim:
 
 ```
+Id: <Id>
 Metric: <metric>
 Direction: <direction>
 Verify: <verify cmd>
