@@ -9,3 +9,8 @@ explore/
 
 # SDD scratch
 .superpowers/
+
+# Session/runtime artifacts
+.claude/
+.memsearch/
+tests/sandbox/work.txt
