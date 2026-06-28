@@ -50,4 +50,11 @@ assert_contains "$ccb" "mark-dead" "campaign marks dead with reason"
 assert_contains "$ccb" "graveyard" "campaign records graveyard"
 tkb="$(cat "$ROOT/agents/tusk.md")"
 assert_contains "$tkb" "graveyard" "tusk RECALL reads graveyard"
+# --- Phase 4: recall skill ---
+rk="$ROOT/skills/recall/SKILL.md"
+assert_eq "1" "$([ -f "$rk" ] && echo 1 || echo 0)" "recall SKILL.md exists"
+rkfm="$(sed -n '1,8p' "$rk")"
+assert_contains "$rkfm" "name: recall" "recall frontmatter name"
+assert_contains "$rkfm" "context: fork" "recall runs in fork context"
+assert_contains "$(cat "$rk")" "kb.sh" "recall uses kb.sh"
 assert_done
