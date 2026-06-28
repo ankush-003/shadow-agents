@@ -60,7 +60,7 @@ The monitor (`monitors/monitors.json`) streams each new results row live to the 
 
 ## 5. Converge & report
 - When the loop ends, read `<state>` for the best arm/metric.
-- Independently verify the best: **dispatch the `igris` subagent** with the winning `Branch`, `Metric`, `Direction`, `Verify`, the claimed `BestMetric`, and `Baseline`. Record Igris's verdict (accept/reject + reason). If Igris rejects, do NOT present the result as verified — say so in the proposal.
+- Independently verify the best: **dispatch the `igris` subagent** with the winning `Branch`, `BaseRef` (the campaign's base commit — captured at campaign start via `git rev-parse HEAD` before any worktrees are created, or the default branch), `Metric`, `Direction`, `Verify`, the claimed `BestMetric`, and `Baseline`. Record Igris's verdict (accept/reject + reason). If Igris rejects, do NOT present the result as verified — say so in the proposal.
 - Write the proposal (never push or merge): `bash ${CLAUDE_PLUGIN_ROOT}/scripts/propose.sh write <state> <campaign>/PROPOSAL.md <winning experiment branch>`. Include Igris's verdict when you tell the user about PROPOSAL.md.
 - Print a learnings report: per-arm attempts + mean delta + best, the winning approach, final stop reason (CONVERGED/PLATEAU/CEILING), and any dead directions.
 - Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/allocate.sh dead-report <state>` and include the pruned directions with their recorded reasons in the report.
