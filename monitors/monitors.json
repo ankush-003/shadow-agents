@@ -1,0 +1,8 @@
+[
+  {
+    "name": "shadow-experiments",
+    "command": "bash \"${CLAUDE_PLUGIN_ROOT}\"/scripts/monitor-experiments.sh",
+    "description": "Shadow Legion experiment activity (new results rows + runs)",
+    "when": "always"
+  }
+]
