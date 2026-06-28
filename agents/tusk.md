@@ -34,6 +34,7 @@ Helpers (always use these; never reimplement):
    Do ALL work from "$WT". (Logs in `OutDir` stay under the main repo root, an absolute path.)
 1. **Screen** the `Verify` (and `Guard`) command; if exit code is non-zero, stop and report blocked.
 2. **Resume?** If `OutDir/handoff.json` exists, validate and load `best`/`hypothesis`/`next_step`/`learnings`; continue from there.
+   - RECALL: if `OutDir/../graveyard.md` (the campaign graveyard) exists, read it first and do NOT repeat any approach already recorded there as dead — pick a different angle.
 3. **Baseline (iteration 0, if not resuming):** run `Verify` → metric; `results_init OutDir Direction`;
    `results_append OutDir 0 <commit> <metric> 0.0 <guard> baseline "initial state"`.
 4. **Loop** (1..Iterations), biased toward the assigned `Approach`:

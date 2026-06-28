@@ -43,4 +43,11 @@ assert_contains "$body" "allocate.sh" "campaign uses allocate.sh seam"
 assert_contains "$body" "tusk" "campaign dispatches tusk"
 assert_contains "$body" "safety-screen.sh" "campaign safety-screens"
 assert_contains "$body" "Concurrency" "campaign honors Concurrency"
+# --- Phase 3: reasoned pruning wiring ---
+cc="$ROOT/commands/campaign.md"; ccb="$(cat "$cc")"
+assert_contains "$ccb" "dead-candidates" "campaign checks dead-candidates"
+assert_contains "$ccb" "mark-dead" "campaign marks dead with reason"
+assert_contains "$ccb" "graveyard" "campaign records graveyard"
+tkb="$(cat "$ROOT/agents/tusk.md")"
+assert_contains "$tkb" "graveyard" "tusk RECALL reads graveyard"
 assert_done

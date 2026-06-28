@@ -39,6 +39,16 @@ Repeat:
    ```
 4. For each Tusk that returns, read its terse report (baseline/final/delta/kept/status) and fold it in:
    `bash .../allocate.sh update <state> a<i> <final_metric> <delta> <status>`.
+
+## 4b. Prune dead directions (reasoned + verified)
+After updating arms for this cycle, check for dead candidates:
+1. `cands=$(bash ${CLAUDE_PLUGIN_ROOT}/scripts/allocate.sh dead-candidates <state> 2)` — arms with ≥2 consecutive non-improving attempts.
+2. For EACH candidate arm, derive the REASON it failed from that arm's Tusk reports/handoff learnings this campaign (e.g. "every variant regressed the metric because X"). Do not invent a reason — quote the shadow's own learning. If you cannot find a concrete reason, do NOT kill the arm yet (give it one more cycle).
+3. With a concrete reason in hand, prune it:
+   `bash ${CLAUDE_PLUGIN_ROOT}/scripts/allocate.sh mark-dead <state> <armid> "<reason>"`
+   `bash ${CLAUDE_PLUGIN_ROOT}/scripts/graveyard.sh append <campaign>/graveyard.md <armid> "<desc>" "<reason>"`
+A dead arm is skipped by `next-arm` and `status` automatically. Never kill an arm without a recorded reason.
+
 5. Loop.
 
 The monitor (`monitors/monitors.json`) streams each new results row live to the task panel as the shadows work.
@@ -47,6 +57,7 @@ The monitor (`monitors/monitors.json`) streams each new results row live to the 
 - When the loop ends, read `<state>` for the best arm/metric. Optionally dispatch **Igris** (if present) to independently verify the best result.
 - For a verified best: `gh pr create` the experiment branch against the main/integration branch. **NEVER auto-merge or push to main.**
 - Print a learnings report: per-arm attempts + mean delta + best, the winning approach, final stop reason (CONVERGED/PLATEAU/CEILING), and any dead directions.
+- Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/allocate.sh dead-report <state>` and include the pruned directions with their recorded reasons in the report.
 
 ## Rules
 - Allocation and stop come ONLY from `allocate.sh`. Never skip a stop verdict.
