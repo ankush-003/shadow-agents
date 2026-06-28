@@ -18,13 +18,13 @@ EXECUTE IMMEDIATELY. You are the Shadow Monarch running a campaign. The FLOW is 
 
 ## 3. Derive directions (the candidate approaches = bandit arms)
 - If `Directions:` given, split on `;`. Otherwise propose 2–4 concrete, distinct approaches to move the metric, based on the Goal and a quick look at Scope.
-- `bash ${CLAUDE_PLUGIN_ROOT}/scripts/allocate.sh init <state> <Direction> 50 3`
+- `bash ${CLAUDE_PLUGIN_ROOT}/scripts/allocate.sh init <state> <Direction> 50 3`  (defaults: `ceiling=50` max campaign cycles, `plateau_k=3` cycles-without-improvement before PLATEAU — distinct from `Iterations` which is the per-arm loop count passed to each Tusk, and `Concurrency` which is the parallel batch size)
 - For each direction i: `allocate.sh add-arm <state> a<i> "<approach text>"`.
 
 ## 4. The campaign loop (deterministic — driven by allocate.sh)
 Repeat:
-1. `status=$(bash .../allocate.sh status <state> <Target?>)`. If `status` != `RUNNING`, break.
-2. Pick up to `Concurrency` arms: call `allocate.sh next-arm <state>` repeatedly; collect distinct arm ids until you have `Concurrency` of them or it returns `STOP` (break if STOP and none collected).
+1. `status=$(bash .../allocate.sh status <state>)` — pass `<Target>` as a second argument ONLY if the user supplied a Target (i.e., `allocate.sh status <state> <Target>` when Target is set, `allocate.sh status <state>` otherwise). If `status` != `RUNNING`, break — this is the ONLY thing that ends the campaign loop.
+2. Collect up to `Concurrency` distinct arm ids by calling `allocate.sh next-arm <state>` repeatedly. If it returns `STOP`, stop collecting for THIS cycle and dispatch whatever you have. If zero arms were collected AND `STOP` was returned, do not spin — re-evaluate at step 1 (the `allocate.sh status` check is the ONLY thing that ends the campaign loop).
 3. **Dispatch one `tusk` subagent per picked arm IN PARALLEL** (multiple Task tool calls in a single message). Each assignment:
    ```
    Metric: <metric>
