@@ -17,13 +17,14 @@ assert_eq "1" "$([ -f "$sk" ] && echo 1 || echo 0)" "monarch SKILL.md exists"
 assert_contains "$(sed -n '1,6p' "$sk")" "name: monarch" "monarch frontmatter name"
 assert_contains "$(sed -n '1,6p' "$sk")" "description:" "monarch frontmatter description"
 assert_eq "1" "$([ -s "$ROOT/output-styles/monarch.md" ] && echo 1 || echo 0)" "output style non-empty"
-# --- Tusk agent ---
+# --- Tusk agent (Phase 2: own worktree, not native isolation) ---
 tk="$ROOT/agents/tusk.md"
 fm="$(sed -n '1,12p' "$tk" 2>/dev/null)"
 assert_contains "$fm" "name: tusk" "tusk name"
-assert_contains "$fm" "isolation: worktree" "tusk isolated in worktree"
 assert_contains "$fm" "model: sonnet" "tusk runs sonnet"
 assert_contains "$fm" "maxTurns:" "tusk has maxTurns cap"
+assert_eq "" "$(grep -c 'isolation: worktree' "$tk" | grep -v '^0$' || true)" "tusk no longer uses native isolation"
+assert_contains "$(cat "$tk")" "git worktree add" "tusk creates its own worktree"
 # --- /experiment command ---
 cm="$ROOT/commands/experiment.md"
 cfm="$(sed -n '1,8p' "$cm" 2>/dev/null)"
