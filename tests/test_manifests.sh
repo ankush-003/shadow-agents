@@ -67,4 +67,12 @@ ccb5="$(cat "$ROOT/commands/campaign.md")"
 assert_contains "$ccb5" "propose.sh" "campaign uses propose.sh"
 assert_contains "$ccb5" "PROPOSAL" "campaign writes PROPOSAL.md"
 assert_eq "0" "$(printf '%s' "$ccb5" | grep -c 'gh pr create' || true)" "campaign no longer uses gh pr create"
+# --- Phase 6: Beru researcher ---
+bru="$ROOT/agents/beru.md"
+assert_eq "1" "$([ -f "$bru" ] && echo 1 || echo 0)" "beru.md exists"
+brufm="$(sed -n '1,12p' "$bru")"
+assert_contains "$brufm" "name: beru" "beru name"
+assert_contains "$brufm" "model: sonnet" "beru runs sonnet"
+assert_contains "$(cat "$bru")" "kb.sh" "beru recalls via kb.sh"
+assert_contains "$(cat "$bru")" "Directions" "beru returns directions"
 assert_done
