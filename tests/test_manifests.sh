@@ -85,4 +85,11 @@ igb="$(cat "$ig")"
 assert_contains "$igb" "git worktree add" "igris verifies in its own worktree"
 assert_contains "$igb" "accept" "igris returns accept/reject verdict"
 assert_eq "0" "$(grep -c 'isolation: worktree' "$ig" || true)" "igris uses manual worktree, not native isolation"
+# --- Phase 6: Beru/Igris wired into campaign + roster ---
+ccb6="$(cat "$ROOT/commands/campaign.md")"
+assert_contains "$ccb6" "beru" "campaign dispatches beru for directions"
+assert_contains "$ccb6" "igris" "campaign dispatches igris to verify"
+mrb="$(cat "$ROOT/skills/monarch/SKILL.md")"
+assert_contains "$mrb" "beru" "monarch roster lists beru"
+assert_contains "$mrb" "igris" "monarch roster lists igris"
 assert_done

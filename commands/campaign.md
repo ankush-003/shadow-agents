@@ -18,7 +18,11 @@ EXECUTE IMMEDIATELY. You are the Shadow Monarch running a campaign. The FLOW is 
 
 ## 3. Derive directions (the candidate approaches = bandit arms)
 - Index + recall prior knowledge: `bash ${CLAUDE_PLUGIN_ROOT}/scripts/kb.sh index` (keeps the memsearch collection current; no-op without memsearch), then use the `recall` skill (or `kb.sh search "<metric/goal terms>"`) to learn what past campaigns tried for this metric. Bias the derived directions toward untried/promising angles and AWAY from anything already recorded dead in a prior graveyard.
-- If `Directions:` given, split on `;`. Otherwise propose 2–4 concrete, distinct approaches to move the metric, based on the Goal and a quick look at Scope.
+- Derive the candidate directions:
+  - If `Directions:` was given, use it.
+  - Else **dispatch the `beru` subagent** with `Goal`, `Metric`, `Direction`, `Scope` (if any), and `OutDir`. Beru recalls prior campaigns and returns a `Directions: a; b; c` line — use it.
+  - Else (Beru returns nothing) fall back to proposing 2–4 concrete directions yourself.
+  Then `allocate.sh add-arm` each direction. (Beru already biases away from prior dead directions; the graveyard still applies.)
 - `bash ${CLAUDE_PLUGIN_ROOT}/scripts/allocate.sh init <state> <Direction> 50 3`  (defaults: `ceiling=50` max campaign cycles, `plateau_k=3` cycles-without-improvement before PLATEAU — distinct from `Iterations` which is the per-arm loop count passed to each Tusk, and `Concurrency` which is the parallel batch size)
 - For each direction i: `allocate.sh add-arm <state> a<i> "<approach text>"`.
 
@@ -55,8 +59,9 @@ A dead arm is skipped by `next-arm` and `status` automatically. Never kill an ar
 The monitor (`monitors/monitors.json`) streams each new results row live to the task panel as the shadows work.
 
 ## 5. Converge & report
-- When the loop ends, read `<state>` for the best arm/metric. Optionally dispatch **Igris** (if present) to independently verify the best result.
-- For the verified best, write a proposal (never push or merge): `bash ${CLAUDE_PLUGIN_ROOT}/scripts/propose.sh write <state> <campaign>/PROPOSAL.md <winning experiment branch>`. Tell the user the PROPOSAL.md path and that they review + integrate it manually.
+- When the loop ends, read `<state>` for the best arm/metric.
+- Independently verify the best: **dispatch the `igris` subagent** with the winning `Branch`, `Metric`, `Direction`, `Verify`, the claimed `BestMetric`, and `Baseline`. Record Igris's verdict (accept/reject + reason). If Igris rejects, do NOT present the result as verified — say so in the proposal.
+- Write the proposal (never push or merge): `bash ${CLAUDE_PLUGIN_ROOT}/scripts/propose.sh write <state> <campaign>/PROPOSAL.md <winning experiment branch>`. Include Igris's verdict when you tell the user about PROPOSAL.md.
 - Print a learnings report: per-arm attempts + mean delta + best, the winning approach, final stop reason (CONVERGED/PLATEAU/CEILING), and any dead directions.
 - Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/allocate.sh dead-report <state>` and include the pruned directions with their recorded reasons in the report.
 
