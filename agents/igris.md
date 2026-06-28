@@ -15,17 +15,20 @@ already safety-screened by the campaign), `BestMetric` (the claimed value), and 
 ## Protocol
 1. **Isolate.** From the repo root:
    ```
-   ROOT="$(git rev-parse --show-toplevel)"; WT="/tmp/shadow-verify-<Branch-sanitized>"
+   ROOT="$(git rev-parse --show-toplevel)"
+   SAFE="$(printf '%s' "<Branch>" | tr '/' '-')"
+   WT="/tmp/shadow-verify-$SAFE"
    git worktree remove -f "$WT" 2>/dev/null; true
    git worktree add "$WT" "<Branch>"
    cd "$WT"
    ```
 2. **Re-verify.** Run the **given** `Verify` command (do not invent new shell beyond worktree setup).
-   Extract the metric (pipe through `${CLAUDE_PLUGIN_ROOT}/scripts/metric.sh` if helpful).
+   If the Verify output needs parsing, pipe it through `${CLAUDE_PLUGIN_ROOT}/scripts/metric.sh` and
+   only that — invent no other shell beyond the worktree setup and the given Verify command.
 3. **Judge.**
    - Does the re-measured metric match `BestMetric` (within reason) AND improve on `Baseline` in the
      correct `Direction`?
-   - Read the diff (`git diff <baseline>..<Branch>`) — is the gain real, or is it gaming the metric
+   - Read the diff (`git diff <baseline>...<Branch>`) — is the gain real, or is it gaming the metric
      (e.g. deleting the test, hardcoding the number, weakening the check)?
 4. **Cleanup.** `cd "$ROOT" && git worktree remove -f "$WT"` (leave the branch).
 
