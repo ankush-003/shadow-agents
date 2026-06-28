@@ -40,7 +40,7 @@ Helpers (always use these; never reimplement):
 4. **Loop** (1..Iterations), biased toward the assigned `Approach`:
    a. Make ONE atomic change toward the metric.
    b. `git add -A && git commit -m "experiment: <desc>"`.
-   c. Run `Verify` → new metric; compute delta in the improving direction.
+   c. Run `Verify` → new metric; compute **signed delta = final − previous metric** (negative is an improvement for lower_is_better, positive for higher_is_better).
    d. If `Guard` set, run it; on failure treat as discard.
    e. **keep** if improved + guard passed; else `git revert --no-edit HEAD` (discard). Verify/Guard error → revert (crash).
    f. `results_append` the row; append a short note to `OutDir/exp-notes.md`.

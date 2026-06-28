@@ -62,4 +62,9 @@ assert_contains "$(cat "$ROOT/agents/tusk.md")" "kb.sh" "tusk RECALL uses kb.sh"
 ccb4="$(cat "$ROOT/commands/campaign.md")"
 assert_contains "$ccb4" "kb.sh" "campaign uses kb.sh (recall/index)"
 assert_contains "$ccb4" "recall" "campaign invokes recall at intake"
+# --- Phase 5: proposal-only integration ---
+ccb5="$(cat "$ROOT/commands/campaign.md")"
+assert_contains "$ccb5" "propose.sh" "campaign uses propose.sh"
+assert_contains "$ccb5" "PROPOSAL" "campaign writes PROPOSAL.md"
+assert_eq "0" "$(printf '%s' "$ccb5" | grep -c 'gh pr create' || true)" "campaign no longer uses gh pr create"
 assert_done

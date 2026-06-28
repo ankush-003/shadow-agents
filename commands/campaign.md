@@ -1,5 +1,5 @@
 ---
-description: Run a multi-experiment campaign — research directions, then iterate across them with a deterministic bandit, dispatching Tusk shadows in parallel worktrees until the metric converges. Reports learnings. PR-only.
+description: Run a multi-experiment campaign — research directions, then iterate across them with a deterministic bandit, dispatching Tusk shadows in parallel worktrees until the metric converges. Reports learnings. Proposal-only (no auto-merge/push).
 argument-hint: "Goal: <text> Metric: <name> Verify: <cmd> [Direction: lower_is_better|higher_is_better] [Target: <n>] [Guard: <cmd>] [Concurrency: N] [Iterations: N] [Directions: a; b; c]"
 ---
 
@@ -56,11 +56,11 @@ The monitor (`monitors/monitors.json`) streams each new results row live to the 
 
 ## 5. Converge & report
 - When the loop ends, read `<state>` for the best arm/metric. Optionally dispatch **Igris** (if present) to independently verify the best result.
-- For a verified best: `gh pr create` the experiment branch against the main/integration branch. **NEVER auto-merge or push to main.**
+- For the verified best, write a proposal (never push or merge): `bash ${CLAUDE_PLUGIN_ROOT}/scripts/propose.sh write <state> <campaign>/PROPOSAL.md <winning experiment branch>`. Tell the user the PROPOSAL.md path and that they review + integrate it manually.
 - Print a learnings report: per-arm attempts + mean delta + best, the winning approach, final stop reason (CONVERGED/PLATEAU/CEILING), and any dead directions.
 - Run `bash ${CLAUDE_PLUGIN_ROOT}/scripts/allocate.sh dead-report <state>` and include the pruned directions with their recorded reasons in the report.
 
 ## Rules
 - Allocation and stop come ONLY from `allocate.sh`. Never skip a stop verdict.
-- Never push, merge, or deploy. Integration is PR-only, human-reviewed.
+- Never push, merge, or deploy. Integration is proposal-only: write PROPOSAL.md; the human reviews and merges. Never push, merge, or run gh.
 - Keep your own context small: rely on Tusk's terse reports + the state file + results.tsv, not full transcripts.
