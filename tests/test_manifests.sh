@@ -23,7 +23,7 @@ fm="$(sed -n '1,12p' "$tk" 2>/dev/null)"
 assert_contains "$fm" "name: tusk" "tusk name"
 assert_contains "$fm" "model: sonnet" "tusk runs sonnet"
 assert_contains "$fm" "maxTurns:" "tusk has maxTurns cap"
-assert_eq "" "$(grep -c 'isolation: worktree' "$tk" | grep -v '^0$' || true)" "tusk no longer uses native isolation"
+assert_eq "0" "$(grep -c 'isolation: worktree' "$tk" || true)" "tusk no longer uses native isolation"
 assert_contains "$(cat "$tk")" "git worktree add" "tusk creates its own worktree"
 # --- /experiment command ---
 cm="$ROOT/commands/experiment.md"

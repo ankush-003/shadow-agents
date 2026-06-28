@@ -28,7 +28,7 @@ Helpers (always use these; never reimplement):
    WT="/tmp/shadow-exp-<Id>"
    cd "$ROOT"
    git worktree remove -f "$WT" 2>/dev/null; git branch -D experiment/<Id> 2>/dev/null; true
-   git worktree add -f "$WT" -b experiment/<Id> HEAD
+   git worktree add "$WT" -b experiment/<Id> HEAD
    cd "$WT"
    ```
    Do ALL work from "$WT". (Logs in `OutDir` stay under the main repo root, an absolute path.)
