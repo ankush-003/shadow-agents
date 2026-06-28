@@ -13,6 +13,11 @@ From the final whole-branch review (2026-06-28). None block Phase 0+1; fold into
 8. **test_manifests.sh**: frontmatter checks use `sed -n '1,6p'`/`'1,12p'` — brittle if frontmatter grows. *(Low)*
 9. **experiment.md**: no explicit guard for unset `CLAUDE_PLUGIN_ROOT` (guaranteed by runtime); OutDir relative-vs-absolute is self-resolved in the dispatch block. *(Low)*
 
+## Learnings from live runs (2026-06-28)
+- **Command namespacing**: plugin commands are invoked as `/<plugin>:<command>` → `/shadow-legion:experiment`; the skill is bare `/monarch`. Add to the README so users don't hit "Unknown command: /experiment". *(High — UX)*
+- **Native `isolation:'worktree'` is fragile**: it failed in a session started before `git init` ("not a git repo" cached at startup). Shadows must `git worktree add` their own worktree instead. Folded into PLAN §7/§10b. *(High — correctness)*
+- **Plugin can't call the Workflow tool**, only request it; orchestrator must fall back to Task subagents + monitors. Folded into PLAN §10b. The validated demo workflow lives at `.../workflows/scripts/shadow-campaign-demo-*.js` (research → 2 parallel shadows → verify; ran green, visible in `/workflows`).
+
 ## Operational (not code)
 - **Plugin load: VERIFIED** — `claude --plugin-dir "$(pwd)" --model haiku -p ...` returned cleanly (exit 0, no manifest parse errors), confirming plugin.json/marketplace.json/component manifests are accepted.
 - **Remaining manual check — live `/experiment` end-to-end run** (documented in `.superpowers/sdd/task-13-report.md`): sandbox target `tests/sandbox/optimize.sh`, expect baseline 3 → lower, experiment commits in an isolated worktree, main tree untouched. Not exercised in CI because it spawns the Tusk subagent in a worktree.

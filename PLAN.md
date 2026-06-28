@@ -353,16 +353,21 @@ principle as the harness's own context-summarization and Workflow resume.
 
 ---
 
-## 7. Git worktree isolation (native)
+## 7. Git worktree isolation (manual-first — validated)
 
-- **Declarative, not hand-rolled:** experiment agents set `isolation: worktree` in their
-  `agents/*.md` frontmatter (or via the Workflow `agent(..., {isolation:'worktree'})` option). Claude
-  Code provisions the worktree; `WorktreeCreate`/`WorktreeRemove` hooks handle any extra setup/cleanup.
+- **Each shadow creates its OWN worktree via `git worktree add`** and works there, then removes it
+  when done. This is the robust default — it works on any real git repo regardless of how the session
+  was started. *Validated:* the Workflow run only went green once shadows created their own worktrees.
+- **Do NOT depend on native `isolation: worktree`** (the `agents/*.md` frontmatter field / the Workflow
+  `isolation:'worktree'` option). It's convenient *when it works* (verified in the tmux session), but
+  it **fails if the session doesn't believe it's a git repo** — e.g. a session started before `git init`
+  caches "not a git repo" and refuses. Treat native isolation as an optimization, manual as the floor.
 - Gives every agent a **private filesystem + branch** → parallel experiments never collide;
   the branch *is* its log (karpathy git-as-memory, per agent).
 - `keep` that's Igris-verified → Monarch opens a **PR** (never auto-merge/push — §9).
-- `discard`/`crash` → branch retained for forensics; worktree torn down by the framework.
-- superpowers' `using-git-worktrees` skill remains a fallback for harnesses lacking native isolation.
+- `discard`/`crash` → branch retained for forensics; the shadow prunes its worktree (`git worktree
+  remove -f`) on exit.
+- superpowers' `using-git-worktrees` skill is a reference for the mechanics.
 
 ---
 
@@ -375,6 +380,16 @@ principle as the harness's own context-summarization and Workflow resume.
 - **Live dashboard**: `state-render.sh` rebuilds `STATE.md` on every experiment write (hook), so the
   human sees running experiments, metrics, and learnings without interrupting agents. `/status`
   prints it; statusline shows campaign rank + running count + best metric.
+- **Plugin monitors = the always-available live feed** (`monitors/monitors.json`, validated against
+  the plugins reference; needs Claude Code ≥ v2.1.105). A monitor is a background command whose every
+  stdout line becomes a notification to the main agent (shown in the task panel) — perfect when the
+  Task-subagent path is used and `/workflows` is unavailable. Planned monitor:
+  `monitor-experiments.sh` polls `.shadow/experiments/*/results.tsv` and emits one line per new row
+  (`🌑 <exp> iter N: metric=X [status] desc`) and per new run. This is the fallback visibility that
+  replaces the `/workflows` tree for end users. (Schema: `{name, command, description, when?}`;
+  `when` = `always` | `on-skill-invoke:<skill>`. Declared in `monitors/monitors.json` or inline
+  `experimental.monitors`. Note the line-buffering caveat — bash printf does flush per line here, but
+  keep emissions newline-terminated.)
 
 ---
 
@@ -405,13 +420,16 @@ principle as the harness's own context-summarization and Workflow resume.
 - *Milestone:* goal in → runnable experiment config out.
 
 **Phase 3 — Orchestrator + learning**
-- `skills/campaign` loop, `orchestrator-state.json` (bandit allocation), `/campaign`, `/learnings`.
-- Igris independent verify. Parallel worktrees via soldiers.
-- *Milestone:* goal in → army runs many experiments → converges, with a learnings report.
+- `/campaign` command that **prefers the Workflow tool, falls back to Task subagents** (§10b);
+  `orchestrator-state.json` (bandit allocation), `/learnings`. Shadows create their **own worktrees**
+  via `git worktree add` (§7, not native isolation). Igris independent verify.
+- *Milestone:* goal in → army runs many experiments (visible in `/workflows` when available) →
+  converges, with a learnings report.
 
 **Phase 4 — Memory & observability**
-- memsearch integration (project KB + recall skill), `STATE.md` auto-render, `/status` dashboard.
-- *Milestone:* human watches live; agents stop repeating tried experiments.
+- memsearch integration (project KB + recall skill), `STATE.md` auto-render, `/status` dashboard,
+  and **`monitors/monitors.json`** (`monitor-experiments.sh`) for the always-available live feed (§8).
+- *Milestone:* human watches live (via `/workflows` or the monitor feed); agents stop repeating tried experiments.
 
 **Phase 5 — Leveling**
 - `xp-tracker` repointed to outcomes; rank-gated capability table; `.ascended` ascension.
@@ -420,19 +438,37 @@ principle as the harness's own context-summarization and Workflow resume.
 
 ---
 
-## 10b. Execution model — how a campaign actually runs
+## 10b. Execution model — how a campaign runs (VALIDATED against live runs)
 
-**Default substrate = the Workflow tool**, because its agents are **visible inside Claude Code**:
-they render live in the `/workflows` progress tree (grouped by phase), so you watch the army work.
-A headless `claude -p` driver would run as invisible OS processes — rejected as the default for
-exactly this reason; kept only as an optional **detached/overnight** mode (§ below).
+**A plugin cannot call the Workflow tool itself.** A plugin is markdown/JSON/scripts; the Workflow
+tool is a capability of the *main* Claude agent. The orchestrator command can only **request** a
+workflow (via its instructions) and only when the session has the capability. So `/campaign` picks a
+substrate by availability, in this order:
 
-Workflow also natively provides everything the loop needs:
-- **per-agent worktree isolation** — `agent(prompt, {isolation:'worktree'})`
+1. **Workflow tool — PREFERRED when available.** Agents render live in the **`/workflows`** tree with
+   real control: agent count, batched concurrency, the `budget` API, and a deterministic bandit loop.
+   *Verified live:* a Research → 2 parallel experiment shadows → Verify campaign ran and was visible
+   in `/workflows` (both shadows drove the metric 3→0; Igris accepted).
+2. **Task subagents — ALWAYS-AVAILABLE fallback.** The plugin dispatches its `agents/*.md` shadows
+   directly (`/experiment` → Tusk). Self-contained and portable for end users; visible in the agent
+   panel (`↓ to manage`, `ctrl+o to expand`) but **not** in `/workflows`. Pair with **monitors** (§8)
+   for a live activity feed so the user still sees progress. *Verified live* in the tmux run.
+3. **Headless `claude -p` driver — optional detached/overnight.** Survives quitting Claude Code, but
+   invisible in the UI.
+
+> **Earned from the runs — do NOT rely on native `isolation:'worktree'`.** It failed in a session
+> started before `git init` (the harness cached "not a git repo" at startup). The robust,
+> session-independent approach is to have **each shadow run `git worktree add` itself** (works on any
+> real git repo, and the shadow cleans up its worktree when done). Native `isolation:'worktree'` is
+> fine *only* in a session that already knows it's a git repo (verified in the tmux run, where Tusk's
+> native worktree worked). The orchestrator must not assume native isolation.
+
+When the Workflow tool IS used, it provides the loop's needs directly:
 - **fresh context per agent** — every `agent()` call is its own context window → low hallucination/cost
 - **real token budget + respawn** — `budget.spent()/remaining()`; respawn = another `agent()` with handoff
 - **concurrency cap** — `parallel()` over a slice of size `Concurrency`
 - **deterministic control flow** — real JS loop for the bandit allocation
+- **worktree** — prefer manual `git worktree add` inside each agent over the `isolation` option (above)
 
 ### Entry point
 `/campaign "<goal>" Concurrency: 4 Iterations: 25 Tokens: 150000` — the command is the explicit
@@ -459,8 +495,10 @@ while (!converged && !plateau && budget.remaining() > FLOOR && cycles++ < CEILIN
     // respawn loop: fresh agent each pass, resumes from handoff.md on disk
     let r, done = false
     while (!done && budget.remaining() > FLOOR) {
+      // experimentPrompt instructs the shadow to `git worktree add` its OWN worktree (robust;
+      // do NOT use the isolation:'worktree' option — it breaks if the session isn't a git repo).
       r = await agent(experimentPrompt(arm), {            // ← visible in /workflows
-            isolation:'worktree', model: rankTier(arm.role),
+            model: rankTier(arm.role),
             label:`exp:${arm.id}`, phase:'Experiment', schema: EXP_RESULT })
       done = r?.status !== 'budget-checkpoint'             // exited on token cap → loop respawns it
     }
@@ -494,6 +532,37 @@ overnight campaigns.
 
 ---
 
+## 10c. Saved workflows = the reusable orchestrator (validated against docs)
+
+The `/workflows` "write an orchestrator" option = **save a run's generated script as a named,
+reusable orchestrator** (press `s` on a run). Findings (docs: workflows.md, claude-directory.md):
+
+- **Location**: `.claude/workflows/<name>.js` (project, committed → teammates get it on clone) or
+  `~/.claude/workflows/<name>.js` (personal). **Invoked as `/<name>`** in autocomplete.
+- **Authored by Claude, saved by you** — you don't hand-write the `.js`; you run a workflow, then
+  save the script the runtime generated. (Per-run scripts also persist under the session dir.)
+- **The script IS the orchestrator** — there is no separate "orchestrator" type; a workflow script
+  holds the loop/branching/state and spawns standard subagents (can route to `.claude/agents/`).
+- **Args**: a saved workflow reads an `args` global, so `/shadow-campaign <goal>` passes input.
+- **Constraints**: Claude Code **≥ v2.1.154**; runs in the background; **resumable within the same
+  session only** (exit = fresh next run); ≤16 concurrent / ≤1000 agents; agents run `acceptEdits`.
+- ⚠️ **Plugins CANNOT bundle workflows** — there is no `workflows/` plugin component. The official
+  pattern for a plugin to expose multi-agent orchestration is a **skill that, when invoked, instructs
+  Claude to write and run a workflow** (matches §10b's "request, don't call").
+
+**So the Shadow Legion shape is two complementary artifacts:**
+1. **The plugin** (`shadow-legion`) ships the skill/commands/agents/monitors/statusline — portable,
+   always-available (Task-subagent path + monitor feed).
+2. **A committed saved orchestrator** `.claude/workflows/shadow-campaign.js` (the polished version of
+   our validated demo) — gives the rich `/workflows` view + control, invokable as `/shadow-campaign`,
+   shared with teammates via git. The plugin's `/campaign` skill *prefers* this when present, else
+   asks Claude to author a workflow, else falls back to Task subagents.
+
+> Action: keep `.claude/workflows/` **tracked** (un-ignore it) so the saved orchestrator is committed,
+> while `.claude/worktrees/` and session cruft stay ignored.
+
+---
+
 ## 11. Decisions
 
 **Resolved**
@@ -511,9 +580,19 @@ overnight campaigns.
 - **Domain:** generic from the start. ✅
 - **Auto-merge:** **PR-only** into the project's main/integration branch; Igris verifies → Monarch
   opens a PR → **human reviews & merges.** Never auto-merge, never auto-push. ✅ (§9, §10b)
-- **Execution substrate:** **Workflow tool** as default — agents are **visible in `/workflows`**
-  inside Claude Code, with native worktree isolation + token budget + respawn. Headless `claude -p`
-  driver kept only as an optional detached/overnight mode (not visible). ✅ (§10b)
+- **Execution substrate (REVISED after live runs):** **Workflow tool preferred, Task subagents +
+  monitors as fallback, headless `claude -p` for detached.** A plugin can't *call* Workflow — only
+  *request* it when available — so the orchestrator must degrade gracefully. ✅ (§10b)
+- **Worktree isolation (REVISED):** **manual `git worktree add` inside each shadow** is the default;
+  native `isolation:'worktree'` is an optimization only (it broke in a pre-`git init` session). ✅ (§7)
+- **Visibility:** `/workflows` tree when Workflow is used; **plugin monitors** stream a live
+  experiment feed otherwise. Monitors require CC ≥ v2.1.105. ✅ (§8)
+- **Reusable orchestrator:** a **committed saved workflow** `.claude/workflows/shadow-campaign.js`
+  (invoked `/shadow-campaign`), NOT a plugin-bundled file (plugins can't ship workflows). The plugin's
+  `/campaign` skill prefers it when present. `.claude/workflows/` is un-ignored; CC ≥ v2.1.154. ✅ (§10c)
+- **Command namespacing (observed):** plugin commands are invoked as `/<plugin>:<command>` (e.g.
+  `/shadow-legion:experiment`); skills by bare name (`/monarch`). Document in the README so users
+  don't hit "Unknown command". ✅
 
 **Requirements the user must have installed**
 - `git` (worktrees), `gh` (PR creation), `jq`, a Python toolchain with `uvx` or `pipx` (memsearch),

@@ -10,7 +10,8 @@ explore/
 # SDD scratch
 .superpowers/
 
-# Session/runtime artifacts
-.claude/
+# Session/runtime artifacts (but keep saved workflows trackable — see PLAN §10c)
+.claude/*
+!.claude/workflows/
 .memsearch/
 tests/sandbox/work.txt
