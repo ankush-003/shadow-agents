@@ -17,6 +17,7 @@ EXECUTE IMMEDIATELY. You are the Shadow Monarch running a campaign. The FLOW is 
 - Campaign dir: `.shadow/campaign-$(date -u +%y%m%d-%H%M%S)` under the git root. State file: `<campaign>/orchestrator-state.json`.
 
 ## 3. Derive directions (the candidate approaches = bandit arms)
+- Index + recall prior knowledge: `bash ${CLAUDE_PLUGIN_ROOT}/scripts/kb.sh index` (keeps the memsearch collection current; no-op without memsearch), then use the `recall` skill (or `kb.sh search "<metric/goal terms>"`) to learn what past campaigns tried for this metric. Bias the derived directions toward untried/promising angles and AWAY from anything already recorded dead in a prior graveyard.
 - If `Directions:` given, split on `;`. Otherwise propose 2–4 concrete, distinct approaches to move the metric, based on the Goal and a quick look at Scope.
 - `bash ${CLAUDE_PLUGIN_ROOT}/scripts/allocate.sh init <state> <Direction> 50 3`  (defaults: `ceiling=50` max campaign cycles, `plateau_k=3` cycles-without-improvement before PLATEAU — distinct from `Iterations` which is the per-arm loop count passed to each Tusk, and `Concurrency` which is the parallel batch size)
 - For each direction i: `allocate.sh add-arm <state> a<i> "<approach text>"`.

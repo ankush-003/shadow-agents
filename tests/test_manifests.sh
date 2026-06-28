@@ -57,4 +57,9 @@ rkfm="$(sed -n '1,8p' "$rk")"
 assert_contains "$rkfm" "name: recall" "recall frontmatter name"
 assert_contains "$rkfm" "context: fork" "recall runs in fork context"
 assert_contains "$(cat "$rk")" "kb.sh" "recall uses kb.sh"
+# --- Phase 4: KB wiring ---
+assert_contains "$(cat "$ROOT/agents/tusk.md")" "kb.sh" "tusk RECALL uses kb.sh"
+ccb4="$(cat "$ROOT/commands/campaign.md")"
+assert_contains "$ccb4" "kb.sh" "campaign uses kb.sh (recall/index)"
+assert_contains "$ccb4" "recall" "campaign invokes recall at intake"
 assert_done
