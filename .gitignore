@@ -14,4 +14,3 @@ explore/
 .claude/*
 !.claude/workflows/
 .memsearch/
-tests/sandbox/work.txt
